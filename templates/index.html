@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UseItFirst</title>
+<style>
+body { font-family: system-ui, sans-serif; background: #111; color: #eee; max-width: 760px; margin: 2rem auto; padding: 0 1rem; }
+a { color: #a78bfa; }
+.notice { border: 2px solid #f59e0b; padding: 1rem; margin-bottom: 1.5rem; }
+.card { border: 1px solid #444; padding: 1rem; margin: 0.75rem 0; }
+.status { font-weight: bold; }
+form.inline { display: inline; }
+label { display: block; margin: 0.4rem 0; }
+</style>
+</head>
+<body>
+<h1>UseItFirst</h1>
+<div class="notice">
+<strong>Reminder and planning tool only -- not food-safety advice.</strong><br>
+When in doubt, throw it out. Smell and appearance do not prove safety.
+An item past its window is "past window" -- never "probably fine."
+</div>
+
+<h2>Morning list -- {{ today }}</h2>
+{% if morning %}
+  {% for item in morning %}
+  <div class="card">
+    <span class="status">{{ item.status }}</span> -- {{ item.name }} ({{ item.quantity }}, {{ item.storage }})
+    {% if item.days_left is not none %}<br>Deadline: {{ item.deadline }} ({{ item.days_left }} day(s) left){% endif %}
+    <br>Use it as: {{ item.suggestions | join(", ") }}
+  </div>
+  {% endfor %}
+{% else %}
+  <p>Nothing urgent today.</p>
+{% endif %}
+
+<h2>All active items, most urgent first</h2>
+{% for item in items %}
+<div class="card">
+  <span class="status">{{ item.status }}</span> -- {{ item.name }} ({{ item.category_label }}, {{ item.quantity }}, {{ item.storage }})
+  <br>Started: {{ item.start_date }}{% if item.package_use_by %} | Package use by: {{ item.package_use_by }}{% endif %}
+  {% if item.days_left is not none %}<br>Deadline: {{ item.deadline }} ({{ item.days_left }} day(s) left){% endif %}
+  <br>Use it as: {{ item.suggestions | join(", ") }}
+  <form class="inline" method="post" action="/items/{{ item.id }}/outcome">
+    <input type="hidden" name="outcome" value="used"><button>Used</button>
+  </form>
+  <form class="inline" method="post" action="/items/{{ item.id }}/outcome">
+    <input type="hidden" name="outcome" value="frozen"><button>Frozen</button>
+  </form>
+  <form class="inline" method="post" action="/items/{{ item.id }}/outcome">
+    <input type="hidden" name="outcome" value="thrown away"><button>Thrown away</button>
+  </form>
+</div>
+{% else %}
+<p>No active items yet.</p>
+{% endfor %}
+
+<h2>Add an item</h2>
+<form method="post" action="/add">
+  <label>Name <input name="name" required></label>
+  <label>Category
+    <select name="category">
+      {% for key, entry in categories.items() %}
+      <option value="{{ key }}">{{ entry.label }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Date bought / cooked / opened <input type="date" name="start_date" required></label>
+  <label>Quantity <input name="quantity" value="1"></label>
+  <label>Storage
+    <select name="storage">
+      <option value="fridge">fridge</option>
+      <option value="freezer">freezer</option>
+      <option value="pantry">pantry</option>
+    </select>
+  </label>
+  <label>Package use-by date (optional) <input type="date" name="package_use_by"></label>
+  <button>Add item</button>
+</form>
+<p><a href="/outcomes">Outcome log</a> -- used / frozen / thrown away. This log is the data for a future personal waste model (v0.2).</p>
+</body>
+</html>
